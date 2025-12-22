@@ -1647,11 +1647,8 @@ export const Floor3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, patte
     
     // Validate that we have positive dimensions
     if (tileWidth > 0 && tileHeight > 0) {
-    // Ensure tile dimensions are properly defined with fallback values
-    const tileWidth = (tileDimensions.width && typeof tileDimensions.width === 'number') ? tileDimensions.width : 300;
-    const tileHeight = (tileDimensions.height && typeof tileDimensions.height === 'number') ? tileDimensions.height : 300;
-    
-    const layout = calculateTileLayout(
+      // Use the already defined tile dimensions
+      const layout = calculateTileLayout(
       roomWidth,
       roomDepth,
       tileWidth, 
@@ -1689,6 +1686,9 @@ export const Floor3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, patte
           />
         );
       }
+    }
+    
+    // Close validation check
     }
     
     // Add floor measurements
@@ -1866,11 +1866,8 @@ export const Parking3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pat
     
     // Validate that we have positive dimensions
     if (tileWidth > 0 && tileHeight > 0) {
-    // Ensure tile dimensions are properly defined with fallback values
-    const tileWidth = (tileDimensions.width && typeof tileDimensions.width === 'number') ? tileDimensions.width : 300;
-    const tileHeight = (tileDimensions.height && typeof tileDimensions.height === 'number') ? tileDimensions.height : 300;
-    
-    const layout = calculateTileLayout(
+      // Use the already defined tile dimensions
+      const layout = calculateTileLayout(
       roomWidth,
       roomDepth,
       tileWidth, 
