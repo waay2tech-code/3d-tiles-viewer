@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import '../App.css';
 import { getTiles, addTile, deleteTile } from '../data/tileManager';
 import TILE_DIMENSIONS from '../data/tileData';
@@ -33,16 +34,30 @@ const AdminPanel = () => {
       return TILE_DIMENSIONS[roomType]?.[areaType] || [];
     }
     
-    // For rooms with general dimensions
-    return TILE_DIMENSIONS[roomType] || [];
+    // For rooms with general dimensions, check if the area type exists
+    if (TILE_DIMENSIONS[roomType]?.[areaType]) {
+      return TILE_DIMENSIONS[roomType][areaType];
+    }
+    
+    // If the area type doesn't exist, return an empty array
+    return [];
   };
   
   // Preview URL for uploaded images
   const [imagePreview, setImagePreview] = useState('');
+  const imagePreviewRef = useRef(null);
 
   // Load tiles on component mount
   useEffect(() => {
     setTiles(getTiles());
+    
+    // Cleanup function
+    return () => {
+      // Clean up any preview URLs
+      if (imagePreviewRef.current) {
+        URL.revokeObjectURL(imagePreviewRef.current);
+      }
+    };
   }, []);
 
   const handleAddUser = (e) => {
@@ -64,8 +79,15 @@ const AdminPanel = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Clean up previous preview URL if exists
+      if (imagePreviewRef.current) {
+        URL.revokeObjectURL(imagePreviewRef.current);
+      }
+      
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
+      // Store the preview URL in ref to clean it up later
+      imagePreviewRef.current = previewUrl;
       setImagePreview(previewUrl);
       setNewTile({ ...newTile, imageUrl: previewUrl });
     }
@@ -90,6 +112,11 @@ const AdminPanel = () => {
         imageUrl: '' 
       });
       setImagePreview('');
+      // Clean up the preview URL
+      if (imagePreviewRef.current) {
+        URL.revokeObjectURL(imagePreviewRef.current);
+        imagePreviewRef.current = null;
+      }
     }
   };
 
@@ -105,9 +132,9 @@ const AdminPanel = () => {
           <h1>NPV Visuals</h1>
           <nav>
             <ul>
-              <li><a href="/">Home</a></li>
-              <li><a href="/viewer">Tile Viewer</a></li>
-              <li><a href="/admin">Admin Panel</a></li>
+              <li><Link to="/">Home</Link></li>
+              <li><Link to="/viewer">Tile Viewer</Link></li>
+              <li><Link to="/admin">Admin Panel</Link></li>
             </ul>
           </nav>
         </div>
@@ -234,7 +261,25 @@ const AdminPanel = () => {
                   <select 
                     id="tileRoomType" 
                     value={newTile.roomType}
-                    onChange={(e) => setNewTile({...newTile, roomType: e.target.value})}
+                    onChange={(e) => {
+                      const selectedRoomType = e.target.value;
+                      let newAreaType = 'wall';
+                      
+                      // Set appropriate area type based on room type
+                      if (['bathroom', 'kitchen', 'bedroom'].includes(selectedRoomType)) {
+                        newAreaType = newTile.areaType || 'wall'; // Keep existing area type if it's one of these
+                      } else if (['floor', 'parking', 'steps'].includes(selectedRoomType)) {
+                        newAreaType = 'floor';
+                      } else if (selectedRoomType === 'elevation') {
+                        newAreaType = 'wall';
+                      }
+                      
+                      setNewTile({
+                        ...newTile,
+                        roomType: selectedRoomType,
+                        areaType: newAreaType
+                      });
+                    }}
                   >
                     <option value="bathroom">Bathroom</option>
                     <option value="kitchen">Kitchen</option>
@@ -261,6 +306,34 @@ const AdminPanel = () => {
                   </div>
                 )}
                 
+                {/* Area Type selector for rooms with only floor or wall areas */}
+                {(['floor', 'parking', 'steps'].includes(newTile.roomType)) && (
+                  <div className="form-group">
+                    <label htmlFor="tileAreaType">📍 Area Type:</label>
+                    <select 
+                      id="tileAreaType" 
+                      value="floor"
+                      disabled
+                    >
+                      <option value="floor">Floor</option>
+                    </select>
+                  </div>
+                )}
+                
+                {/* Area Type selector for elevation which only has walls */}
+                {(['elevation'].includes(newTile.roomType)) && (
+                  <div className="form-group">
+                    <label htmlFor="tileAreaType">📍 Area Type:</label>
+                    <select 
+                      id="tileAreaType" 
+                      value="wall"
+                      disabled
+                    >
+                      <option value="wall">Wall</option>
+                    </select>
+                  </div>
+                )}
+                
                 <div className="form-group">
                   <label htmlFor="tileDimensions">📐 Dimensions (W x H):</label>
                   <select 
@@ -279,7 +352,7 @@ const AdminPanel = () => {
                   >
                     <option value="">Select Dimensions</option>
                     {getAvailableDimensions().map((dim, index) => (
-                      <option key={index} value={dim.name}>
+                      <option key={`${newTile.roomType}-${newTile.areaType}-${index}`} value={dim.name}>
                         {dim.name} ({dim.width}mm x {dim.height}mm)
                       </option>
                     ))}

@@ -1,56 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Box, Text } from '@react-three/drei';
+import { Physics } from '@react-three/cannon';
 import '../App.css';
 import TILE_DIMENSIONS from '../data/tileData';
 // Import the tile manager instead of parseDimensions
 import { getTiles, getTilesByRoomAndArea, parseDimensions } from '../data/tileManager';
+import { generateTiles } from '../data/tileManager';
 // Import the new realistic room components
-import { Bathroom3D, Kitchen3D, Bedroom3D, Floor3D, Parking3D, Steps3D, Elevation3D } from '../components/RealisticRooms';
-
-// Professional tile layout calculator with advanced features
-export const calculateTileLayout = (surfaceWidth, surfaceHeight, tileWidth, tileHeight, pattern = 'straight', isFloor = false) => {
-  // Add 2mm grout spacing to each tile dimension
-  const effectiveTileWidth = tileWidth + 2;   // 2mm grout spacing
-  const effectiveTileHeight = tileHeight + 2; // 2mm grout spacing
-  
-  // Calculate number of tiles that fit (round down to avoid partial tiles)
-  const tilesX = Math.floor(surfaceWidth / effectiveTileWidth);
-  const tilesY = Math.floor(surfaceHeight / effectiveTileHeight);
-  
-  // Calculate actual coverage
-  const coverageWidth = tilesX * effectiveTileWidth;
-  const coverageHeight = tilesY * effectiveTileHeight;
-  
-  // Calculate starting position to center the tile grid
-  const startX = -(coverageWidth / 2) / 1000 + (effectiveTileWidth / 2) / 1000; // Convert to meters and center
-  const startY = -(coverageHeight / 2) / 1000 + (effectiveTileHeight / 2) / 1000; // Convert to meters and center
-  
-  // Pattern variations
-  let patternOffsetX = 0;
-  let patternOffsetY = 0;
-  
-  if (pattern === 'brick') {
-    patternOffsetX = (effectiveTileWidth) / 2000; // Half tile offset for brick pattern
-  } else if (pattern === 'herringbone' && isFloor) {
-    // Special herringbone pattern for floors
-    patternOffsetX = 0;
-    patternOffsetY = 0;
-  }
-  
-  return {
-    tilesX,
-    tilesY,
-    startX,
-    startY,
-    coverageWidth,
-    coverageHeight,
-    patternOffsetX,
-    patternOffsetY,
-    effectiveTileWidth,
-    effectiveTileHeight
-  };
-};
+import Bathroom3D from '../components/models/Bathroom3D';
+import Kitchen3D from '../components/models/Kitchen3D';
+import Bedroom3D from '../components/models/Bedroom3D';
+import Floor3D from '../components/models/Floor3D';
+import Parking3D from '../components/models/Parking3D';
+import Steps3D from '../components/models/Steps3D';
+import Elevation3D from '../components/models/Elevation3D';
+import TilesRenderer from '../components/common/TilesRenderer';
+import { calculateTileLayout } from '../core/calculateTileLayout';
 
 // Professional measurement display
 const MeasurementDisplay = ({ position, text, color = "#ff0000" }) => {
@@ -68,21 +34,48 @@ const MeasurementDisplay = ({ position, text, color = "#ff0000" }) => {
 };
 
 const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern }) => {
+  // Define room dimensions for each room type
+  const getRoomDimensions = () => {
+    switch(selectedRoom) {
+      case 'bathroom':
+        return { width: 3000, depth: 2500, height: 2700 };  // Match Bathroom3D component
+      case 'kitchen':
+        return { width: 3600, depth: 3000, height: 2700 };  // Match Kitchen3D component
+      case 'bedroom':
+        return { width: 4000, depth: 3600, height: 2700 };  // Match Bedroom3D component
+      case 'floor':
+        return { width: 6000, depth: 4500, height: 100 };   // Match Floor3D component
+      case 'parking':
+        return { width: 6000, depth: 5000, height: 100 };   // Match Parking3D component
+      case 'steps':
+        return { width: 2000, depth: 3000, height: 1800 };  // Match Steps3D component
+      case 'elevation':
+        return { width: 4000, depth: 300, height: 3000 };   // Match Elevation3D component
+      default:
+        return { width: 3000, depth: 2500, height: 2400 };
+    }
+  };
+
+  // Generate tiles based on room, tile, and area type
+  const roomDimensions = getRoomDimensions();
+  const tiles = generateTiles({
+    room: roomDimensions,
+    tile: selectedTile,
+    areaType: selectedArea,
+    pattern: pattern
+  });
+
   // Render the appropriate room model based on selection
   switch(selectedRoom) {
     case 'bathroom':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Bathroom3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Bathroom3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -91,21 +84,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'kitchen':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Kitchen3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Kitchen3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -114,21 +103,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'bedroom':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Bedroom3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Bedroom3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -137,21 +122,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'floor':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Floor3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Floor3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -160,21 +141,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'parking':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Parking3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Parking3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -183,21 +160,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'steps':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Steps3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
+          <Steps3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -206,20 +179,17 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
+        </Physics>
       );
     case 'elevation':
       return (
-        <>
+        <Physics gravity={[0, -9.8, 0]}>
           <ambientLight intensity={0.4} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
           <directionalLight position={[5, 5, 5]} intensity={0.5} />
           <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Elevation3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            pattern={pattern}
-          />
+          <Elevation3D />
+          <TilesRenderer tiles={tiles} tile={selectedTile} roomDimensions={roomDimensions} />
           <OrbitControls 
             enablePan={true} 
             enableZoom={true} 
@@ -228,30 +198,7 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
             maxDistance={20}
             autoRotate={false}
           />
-        </>
-      );
-    default:
-      return (
-        <>
-          <ambientLight intensity={0.4} />
-          <pointLight position={[10, 10, 10]} intensity={0.6} />
-          <directionalLight position={[5, 5, 5]} intensity={0.5} />
-          <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          <Bathroom3D 
-            tileDimensions={selectedTile} 
-            tileColor={tileColor}
-            areaType={selectedArea}
-            pattern={pattern}
-          />
-          <OrbitControls 
-            enablePan={true} 
-            enableZoom={true} 
-            enableRotate={true} 
-            minDistance={2}
-            maxDistance={20}
-            autoRotate={false}
-          />
-        </>
+        </Physics>
       );
   }
 };
@@ -335,7 +282,9 @@ const TileViewer = () => {
       }
       
       // Fallback to static tiles if no dynamic tiles are available
-      const staticTiles = TILE_DIMENSIONS[selectedRoom]?.[selectedArea] || [];
+      // For 'wall' area type, use wall tiles for the room
+      const areaType = selectedArea === 'wall' ? 'wall' : selectedArea;
+      const staticTiles = TILE_DIMENSIONS[selectedRoom]?.[areaType] || [];
       return staticTiles;
     } catch (error) {
       console.error('Error getting tiles for selection:', error);
@@ -349,27 +298,32 @@ const TileViewer = () => {
     if (!selectedTile) return null;
     
     // Define room dimensions in mm (matching the actual 3D component dimensions)
-    let roomWidth, roomDepth;
+    let roomWidth, roomDepth, roomHeight;
     switch(selectedRoom) {
       case 'bathroom':
         roomWidth = 3000;  // Match Bathroom3D component
         roomDepth = 2500;  // Match Bathroom3D component
+        roomHeight = 2400; // Standard room height
         break;
       case 'kitchen':
         roomWidth = 3600;  // Match Kitchen3D component
         roomDepth = 3000;  // Match Kitchen3D component
+        roomHeight = 2400; // Standard room height
         break;
       case 'bedroom':
         roomWidth = 4000;  // Match Bedroom3D component
         roomDepth = 3600;  // Match Bedroom3D component
+        roomHeight = 2400; // Standard room height
         break;
       case 'floor':
         roomWidth = 6000;  // Match Floor3D component
         roomDepth = 4500;  // Match Floor3D component
+        roomHeight = 2400; // Standard room height
         break;
       case 'parking':
         roomWidth = 6000;  // Match Parking3D component
         roomDepth = 5000;  // Match Parking3D component
+        roomHeight = 2400; // Standard room height
         break;
       case 'steps':
         // Steps have special dimensions: each step surface is 1000mm × 300mm
@@ -453,10 +407,39 @@ const TileViewer = () => {
       case 'elevation':
         roomWidth = 4000;  // Match Elevation3D component
         roomDepth = 3000;  // Match Elevation3D component (wall height)
+        roomHeight = 3000; // Standard room height
         break;
       default:
         roomWidth = 3000;
         roomDepth = 2500;
+        roomHeight = 2400;
+    }
+    
+    // For wall area type, calculate total wall area (back + left + right walls)
+    if (selectedArea === 'wall') {
+      // Calculate total wall area: back wall + left wall + right wall
+      const backWallArea = roomWidth * roomHeight;  // Back wall
+      const leftWallArea = roomDepth * roomHeight;  // Left wall
+      const rightWallArea = roomDepth * roomHeight; // Right wall
+      const totalWallArea = backWallArea + leftWallArea + rightWallArea;
+      
+      const { width: tileWidth, height: tileHeight } = selectedTile;
+      const effectiveTileWidth = tileWidth + 2; // 2mm grout
+      const effectiveTileHeight = tileHeight + 2; // 2mm grout
+      
+      // Calculate how many tiles fit in total wall area
+      const tileArea = effectiveTileWidth * effectiveTileHeight;
+      const totalTiles = Math.ceil(totalWallArea / tileArea);
+      
+      // Add 10% waste factor
+      const tilesWithWaste = Math.ceil(totalTiles * 1.1);
+      
+      return {
+        totalTiles,
+        tilesWithWaste,
+        totalWallArea,
+        tileArea
+      };
     }
     
     const { width: tileWidth, height: tileHeight } = selectedTile;
@@ -553,6 +536,13 @@ const TileViewer = () => {
                     <p>🪜 Number of Steps: {tileRequirements.numberOfSteps}</p>
                     <p>📐 Coverage per Step: {tileRequirements.coverageWidth}mm × {tileRequirements.coverageDepth}mm</p>
                   </>
+                ) : selectedArea === 'wall' ? (
+                  <>
+                    <p>🧮 Tiles Needed: {tileRequirements.totalTiles}</p>
+                    <p>📦 With 10% Waste: {tileRequirements.tilesWithWaste}</p>
+                    <p>📐 Total Wall Area: {Math.round(tileRequirements.totalWallArea)} mm²</p>
+                    <p>📏 Tile Area: {Math.round(tileRequirements.tileArea)} mm²</p>
+                  </>
                 ) : (
                   <>
                     <p>🧮 Tiles Needed: {tileRequirements.totalTiles}</p>
@@ -594,8 +584,8 @@ const TileViewer = () => {
                 value={selectedArea} 
                 onChange={(e) => setSelectedArea(e.target.value)}
               >
-                <option value="wall">Wall</option>
                 <option value="floor">Floor</option>
+                <option value="wall">Wall</option>
               </select>
             </div>
             

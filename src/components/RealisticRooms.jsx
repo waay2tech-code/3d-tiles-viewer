@@ -1,117 +1,17 @@
-import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React from 'react';
 import { Box, Sphere, Cylinder, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Enhanced Tile component with proper orientation for floors and walls
-const Tile3D = ({
-  dimensions,
-  position,
-  color = "#4a90e2",
-  isSelected = false,
-  isFloor = false,
-  rotation = null,
-}) => {
-  const { width, height } = dimensions;
-
-  // mm → meters
-  const w = width / 1000;
-  const h = height / 1000;
-
-  // Tile thickness (Z axis only – ALWAYS)
-  const thickness = isFloor ? 0.005 : 0.01;
-
-  const meshRef = useRef();
-
-  useFrame((state) => {
-    if (isSelected && meshRef.current) {
-      meshRef.current.rotation.z =
-        Math.sin(state.clock.elapsedTime * 2) * 0.02;
-    }
-  });
-
-  // ✅ CORRECT ROTATION LOGIC
-  const finalRotation =
-    rotation ??
-    (isFloor ? [-Math.PI / 2, 0, 0] : [0, 0, 0]);
-
-  return (
-    <Box
-      ref={meshRef}
-      position={position}
-      rotation={finalRotation}
-      args={[w, h, thickness]} // ✅ NEVER swap dimensions
-    >
-      <meshStandardMaterial
-        color={color}
-        roughness={0.25}
-        metalness={0.1}
-        emissive={isSelected ? color : "#000"}
-        emissiveIntensity={isSelected ? 0.03 : 0}
-        side={THREE.DoubleSide}
-      />
-    </Box>
-  );
-};
-
-// Professional tile layout calculator with advanced features
-export const calculateTileLayout = (surfaceWidth, surfaceHeight, tileWidth, tileHeight, pattern = 'straight', isFloor = false) => {
-  // Add 2mm grout spacing to each tile dimension
-  const effectiveTileWidth = tileWidth + 2;   // 2mm grout spacing
-  const effectiveTileHeight = tileHeight + 2; // 2mm grout spacing
-  
-  // Calculate number of tiles that fit (round down to avoid partial tiles)
-  const tilesX = Math.floor(surfaceWidth / effectiveTileWidth);
-  const tilesY = Math.floor(surfaceHeight / effectiveTileHeight);
-  
-  // Calculate actual coverage
-  const coverageWidth = tilesX * effectiveTileWidth;
-  const coverageHeight = tilesY * effectiveTileHeight;
-  
-  // Calculate starting position to center the tile grid
-  const startX = -(coverageWidth / 2) / 1000 + (effectiveTileWidth / 2) / 1000; // Convert to meters and center
-  const startY = -(coverageHeight / 2) / 1000 + (effectiveTileHeight / 2) / 1000; // Convert to meters and center
-  
-  // Pattern variations
-  let patternOffsetX = 0;
-  let patternOffsetY = 0;
-  
-  if (pattern === 'brick') {
-    patternOffsetX = (effectiveTileWidth) / 2000; // Half tile offset for brick pattern
-  } else if (pattern === 'herringbone' && isFloor) {
-    // Special herringbone pattern for floors
-    patternOffsetX = 0;
-    patternOffsetY = 0;
-  }
-  
-  return {
-    tilesX,
-    tilesY,
-    startX,
-    startY,
-    coverageWidth,
-    coverageHeight,
-    patternOffsetX,
-    patternOffsetY,
-    effectiveTileWidth,
-    effectiveTileHeight
-  };
-};
-
-// Professional measurement display
-export const MeasurementDisplay = ({ position, text, color = "#ff0000" }) => {
-  return (
-    <Text
-      position={position}
-      color={color}
-      fontSize={0.1}
-      anchorX="center"
-      anchorY="middle"
-    >
-      {text}
-    </Text>
-  );
-};
+// Import the new modular components
+import Tile3D from './common/Tile3D';
+import { calculateTileLayout } from '../core/calculateTileLayout';
+import Bathroom3DModel from './models/Bathroom3D';
+import Kitchen3DModel from './models/Kitchen3D';
+import Bedroom3DModel from './models/Bedroom3D';
+import Floor3DModel from './models/Floor3D';
+import Parking3DModel from './models/Parking3D';
+import Steps3DModel from './models/Steps3D';
+import Elevation3DModel from './models/Elevation3D';
 
 // Surface orientation helper for consistent tile application
 export const getSurfaceOrientation = (surfaceType) => {
@@ -140,12 +40,25 @@ export const getSurfaceOrientation = (surfaceType) => {
   }
 };
 
+// Professional measurement display
+export const MeasurementDisplay = ({ position, text, color = "#ff0000" }) => {
+  return (
+    <Text
+      position={position}
+      color={color}
+      fontSize={0.1}
+      anchorX="center"
+      anchorY="middle"
+    >
+      {text}
+    </Text>
+  );
+};
+
 // Ultra-Realistic Bathroom 3D Model
 export const Bathroom3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic bathroom dimensions in mm (market standard)
-  const roomWidth = 3000;   // 3m (standard bathroom width)
-  const roomHeight = 2700;  // 2.7m (standard ceiling height)
-  const roomDepth = 2500;   // 2.5m (standard depth)
+  // For backward compatibility, we'll use the new component
+  return <Bathroom3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -567,10 +480,8 @@ export const Bathroom3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pa
 
 // Modular Realistic Kitchen 3D Model
 export const Kitchen3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic kitchen dimensions in mm (market standard)
-  const roomWidth = 3600;   // 3.6m (standard kitchen width)
-  const roomHeight = 2700;  // 2.7m (standard ceiling height)
-  const roomDepth = 3000;   // 3m (standard depth)
+  // For backward compatibility, we'll use the new component
+  return <Kitchen3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -1026,10 +937,8 @@ export const Kitchen3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pat
 
 // Realistic Bedroom 3D Model
 export const Bedroom3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic bedroom dimensions in mm (market standard)
-  const roomWidth = 4000;   // 4m (standard bedroom width)
-  const roomHeight = 2700;  // 2.7m (standard ceiling height)
-  const roomDepth = 3600;   // 3.6m (standard depth)
+  // For backward compatibility, we'll use the new component
+  return <Bedroom3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -1531,10 +1440,8 @@ export const Bedroom3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pat
 
 // Photorealistic Floor Tiles 3D Model
 export const Floor3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic floor dimensions in mm (market standard)
-  const roomWidth = 6000;   // 6m (standard showroom width)
-  const roomHeight = 100;   // 100mm (floor thickness)
-  const roomDepth = 4500;   // 4.5m (standard showroom depth)
+  // For backward compatibility, we'll use the new component
+  return <Floor3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -1730,10 +1637,8 @@ export const Floor3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, patte
 
 // Realistic Parking Area 3D Model
 export const Parking3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic parking area dimensions in mm (market standard)
-  const roomWidth = 6000;   // 6m (standard parking width)
-  const roomHeight = 100;   // 100mm (floor thickness)
-  const roomDepth = 5000;   // 5m (standard parking depth)
+  // For backward compatibility, we'll use the new component
+  return <Parking3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -1948,10 +1853,8 @@ export const Parking3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pat
 
 // Detailed Stairs 3D Model with Flexible Tile Support
 export const Steps3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, pattern = 'straight' }) => {
-  // Define realistic steps dimensions in mm (market standard)
-  const roomWidth = 2000;   // 2m (standard width)
-  const roomHeight = 1800;  // 1.8m (standard height)
-  const roomDepth = 3000;   // 3m (standard depth)
+  // For backward compatibility, we'll use the new component
+  return <Steps3DModel tileDimensions={tileDimensions} tileColor={tileColor} areaType={areaType} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -2282,10 +2185,8 @@ export const Steps3D = ({ tileDimensions, tileColor = "#4a90e2", areaType, patte
 
 // Professional Building Elevation 3D Model with Market Standard Features
 export const Elevation3D = ({ tileDimensions, tileColor = "#4a90e2", pattern = 'straight' }) => {
-  // Define realistic elevation dimensions in mm (market standard residential dimensions)
-  const roomWidth = 4000;   // 4m (standard room width)
-  const roomHeight = 3000;  // 3m (standard ceiling height)
-  const roomDepth = 300;    // 300mm (standard wall thickness)
+  // For backward compatibility, we'll use the new component
+  return <Elevation3DModel tileDimensions={tileDimensions} tileColor={tileColor} pattern={pattern} />;
 
   // Convert to meters for 3D rendering
   const normalizedRoomWidth = roomWidth / 1000;
@@ -2494,4 +2395,5 @@ export const Elevation3D = ({ tileDimensions, tileColor = "#4a90e2", pattern = '
       {measurements}
     </>
   );
-};
+}
+}
