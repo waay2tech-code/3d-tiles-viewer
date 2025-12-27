@@ -141,9 +141,14 @@ export function generateTiles({
 
   // Apply all walls together
   if (areaType === "wall") {
-    applySurface("back_wall");
-    applySurface("left_wall");
-    applySurface("right_wall");
+    // For elevation model (thin depth), only apply to main wall
+    if (room.depth <= 300) {  // Elevation has depth of 300mm
+      applySurface("back_wall");
+    } else {
+      applySurface("back_wall");
+      applySurface("left_wall");
+      applySurface("right_wall");
+    }
   }
 
   return result;

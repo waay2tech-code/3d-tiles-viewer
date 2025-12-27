@@ -9,10 +9,20 @@ export default function TilesRenderer({ tiles, tile, roomDimensions }) {
     height: 2700
   };
 
-  // meters
   const roomWidthM = room.width / 1000;
   const roomDepthM = room.depth / 1000;
   const roomHeightM = room.height / 1000;
+
+  // Check if this is an elevation model (thin depth)
+  const isElevation = room.depth <= 300;
+
+  const tileDimensions =
+    tile && tile.width && tile.height
+      ? { width: tile.width, height: tile.height }
+      : { width: 300, height: 300 };
+
+  const tileWidthM = tileDimensions.width / 1000;
+  const tileHeightM = tileDimensions.height / 1000;
 
   return tiles.map((t, i) => {
     let position = [0, 0, 0];
@@ -21,52 +31,56 @@ export default function TilesRenderer({ tiles, tile, roomDimensions }) {
     const y = t.positionMM.y / 1000;
 
     switch (t.surface) {
+      /* ============ FLOOR ============ */
       case "floor":
         position = [
           x,
-          -roomHeightM / 2 + 0.05 + 0.0025,  // Floor top surface + tile half thickness
+          -roomHeightM / 2 + 0.05 + 0.0025,
           y
         ];
         break;
 
+      /* ============ BACK WALL ============ */
       case "back_wall":
-        position = [
-          x,
-          -roomHeightM / 2 + y,
-          -roomDepthM / 2 + 0.005
-        ];
+        if (isElevation) {
+          // For elevation model, place tiles on the front face of the wall
+          position = [
+            x,
+            -roomHeightM / 50 + y,  // Start from floor and move up
+            0.15 + 0.005  // Front face of elevation wall + tile offset
+          ];
+        } else {
+          position = [
+            x,
+            -roomHeightM / 50 + y,  // Start from floor and move up
+            -roomDepthM / 2 + 0.05 + 0.005  // Wall surface + tile offset
+          ];
+        }
         break;
 
+      /* ============ LEFT WALL ============ */
       case "left_wall":
         position = [
-          -roomWidthM / 2 + 0.005,
-          -roomHeightM / 2 + y,
+          -roomWidthM / 2 + 0.05 + 0.005,  // Wall surface + tile offset
+          -roomHeightM / 50 + y,  // Start from floor and move up
           x
         ];
         break;
 
+      /* ============ RIGHT WALL ============ */
       case "right_wall":
         position = [
-          roomWidthM / 2 - 0.005,
-          -roomHeightM / 2 + y,
+          roomWidthM / 2 - 0.05 - 0.005,  // Wall surface - tile offset
+          -roomHeightM / 50 + y,  // Start from floor and move up
           x
         ];
         break;
 
       default:
-        position = [
-          x,
-          -roomHeightM / 2 + 0.005,
-          y
-        ];
+        position = [x, 0, y];
     }
 
     const { rotation, isFloor } = getSurfaceOrientation(t.surface);
-
-    // Make sure tile has dimensions before passing to Tile3D
-    const tileDimensions = tile && tile.width && tile.height 
-      ? { width: tile.width, height: tile.height }
-      : { width: 300, height: 300 };
 
     return (
       <Tile3D

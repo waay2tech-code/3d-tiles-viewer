@@ -7,7 +7,7 @@ export const getSurfaceOrientation = (surface) => {
   switch (surface) {
     case "floor":
       return {
-        rotation: [-Math.PI / 2, 0, 0],
+        rotation: [Math.PI, 0, 0],  // 180-degree angle (facing down/upside down)
         isFloor: true
       };
 
