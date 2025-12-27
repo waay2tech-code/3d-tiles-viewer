@@ -62,7 +62,8 @@ const Scene = ({ selectedTile, selectedRoom, selectedArea, tileColor, pattern })
     room: roomDimensions,
     tile: selectedTile,
     areaType: selectedArea,
-    pattern: pattern
+    pattern: pattern,
+    roomType: selectedRoom
   });
 
   // Render the appropriate room model based on selection
@@ -564,7 +565,22 @@ const TileViewer = () => {
               <select 
                 id="room-select" 
                 value={selectedRoom} 
-                onChange={(e) => setSelectedRoom(e.target.value)}
+                onChange={(e) => {
+                  const newRoom = e.target.value;
+                  setSelectedRoom(newRoom);
+                  // For floor and parking models, automatically set area to floor
+                  if (newRoom === 'floor' || newRoom === 'parking') {
+                    setSelectedArea('floor');
+                  }
+                  // For elevation model, automatically set area to wall
+                  else if (newRoom === 'elevation') {
+                    setSelectedArea('wall');
+                  }
+                  // For steps model, automatically set area to floor
+                  else if (newRoom === 'steps') {
+                    setSelectedArea('floor');
+                  }
+                }}
               >
                 <option value="bathroom">Bathroom</option>
                 <option value="kitchen">Kitchen</option>
@@ -582,10 +598,29 @@ const TileViewer = () => {
               <select 
                 id="area-select" 
                 value={selectedArea} 
-                onChange={(e) => setSelectedArea(e.target.value)}
+                onChange={(e) => {
+                  const newArea = e.target.value;
+                  // Prevent wall selection for floor model
+                  if (selectedRoom === 'floor' && newArea === 'wall') {
+                    return;
+                  }
+                  // Prevent floor selection for parking model
+                  if (selectedRoom === 'parking' && newArea === 'floor') {
+                    return;
+                  }
+                  // Prevent floor selection for elevation model
+                  if (selectedRoom === 'elevation' && newArea === 'floor') {
+                    return;
+                  }
+                  // Prevent wall selection for steps model
+                  if (selectedRoom === 'steps' && newArea === 'wall') {
+                    return;
+                  }
+                  setSelectedArea(newArea);
+                }}
               >
-                <option value="floor">Floor</option>
-                <option value="wall">Wall</option>
+                {selectedRoom !== 'elevation' && <option value="floor">Floor</option>}
+                {selectedRoom !== 'floor' && selectedRoom !== 'parking' && selectedRoom !== 'steps' && <option value="wall">Wall</option>}
               </select>
             </div>
             

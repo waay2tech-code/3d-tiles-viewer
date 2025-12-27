@@ -16,8 +16,8 @@ export const TILE_DIMENSIONS = {
       { name: "600 X 300", width: 600, height: 300 }
     ],
     floor: [
-      { name: "600 X 600", width: 600, height: 600 },
       { name: "300 X 300", width: 300, height: 300 },
+      { name: "600 X 600", width: 600, height: 600 },
       { name: "1200 X 600", width: 1200, height: 600 }
     ]
   },
